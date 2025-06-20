@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { useTreeGrowth } from '../hooks/useTreeGrowth';
 import { Reflection } from '../types/tree';
+import { AnimatedTree } from './AnimatedTree';
 
 export const DailyReflection = () => {
-  const { addReflection } = useTreeGrowth();
+  const { addReflection, growthState, isGrowing } = useTreeGrowth();
   const [responses, setResponses] = useState({
     mood: '',
     shape: '',
@@ -13,7 +13,8 @@ export const DailyReflection = () => {
     notes: ''
   });
   const [currentStep, setCurrentStep] = useState(0);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [showMorphingTransition, setShowMorphingTransition] = useState(false);
+  const [showTreeView, setShowTreeView] = useState(false);
 
   const moods = [
     { id: 'peaceful', emoji: '😌', name: 'Peaceful' },
@@ -63,60 +64,137 @@ export const DailyReflection = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Move to intensity and notes
       setCurrentStep(steps.length);
     }
   };
 
   const generateLeaf = () => {
-    setIsGenerating(true);
+    setShowMorphingTransition(true);
     
-    setTimeout(() => {
-      const newReflection: Reflection = {
-        id: `reflection-${Date.now()}`,
-        date: new Date().toISOString(),
-        mood: responses.mood,
-        shape: responses.shape,
-        color: responses.color,
-        intensity: responses.intensity,
-        notes: responses.notes
-      };
+    // Create the reflection
+    const newReflection: Reflection = {
+      id: `reflection-${Date.now()}`,
+      date: new Date().toISOString(),
+      mood: responses.mood,
+      shape: responses.shape,
+      color: responses.color,
+      intensity: responses.intensity,
+      notes: responses.notes
+    };
 
+    // Show morphing animation for 2 seconds, then add to tree
+    setTimeout(() => {
       addReflection(newReflection);
-      setIsGenerating(false);
+      setShowMorphingTransition(false);
+      setShowTreeView(true);
       
-      // Reset form
-      setResponses({
-        mood: '',
-        shape: '',
-        color: '',
-        intensity: 5,
-        notes: ''
-      });
-      setCurrentStep(0);
+      // Auto-return to reflection form after viewing tree
+      setTimeout(() => {
+        setShowTreeView(false);
+        // Reset form
+        setResponses({
+          mood: '',
+          shape: '',
+          color: '',
+          intensity: 5,
+          notes: ''
+        });
+        setCurrentStep(0);
+      }, 4000);
     }, 2000);
   };
 
-  if (isGenerating) {
+  const getShapeClipPath = (shape: string) => {
+    const shapes = {
+      triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+      circle: 'circle(50%)',
+      oval: 'ellipse(65% 45%)',
+      diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+      star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
+    };
+    return shapes[shape as keyof typeof shapes] || 'ellipse(65% 45%)';
+  };
+
+  const getColorClass = (color: string) => {
+    const colors = {
+      sage: 'bg-sage-400',
+      blue: 'bg-blue-400',
+      gray: 'bg-gray-500',
+      yellow: 'bg-yellow-400',
+      red: 'bg-red-400',
+      purple: 'bg-purple-400',
+      orange: 'bg-orange-400'
+    };
+    return colors[color as keyof typeof colors] || 'bg-sage-400';
+  };
+
+  if (showTreeView) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="text-center space-y-6 max-w-md">
-          <div className="text-6xl animate-bounce">🌱</div>
-          <h3 className="text-2xl font-light text-sage-800">
-            Growing your leaf...
-          </h3>
-          <p className="text-sage-600">
-            Your reflection is becoming part of your tree.
-          </p>
-          <div className="flex justify-center space-x-1">
-            {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="w-3 h-3 bg-sage-400 rounded-full animate-pulse"
-                style={{ animationDelay: `${i * 0.2}s` }}
-              />
-            ))}
+        <div className="max-w-2xl w-full space-y-6">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl md:text-3xl font-light text-sage-800 mb-4 animate-fade-in">
+              Your reflection has grown
+            </h2>
+            <p className="text-sage-600 animate-fade-in">
+              Watch as your new leaf finds its place in your tree.
+            </p>
           </div>
+          
+          <AnimatedTree 
+            growthState={growthState}
+            onLeafClick={() => {}}
+            isGrowing={isGrowing}
+          />
+          
+          <div className="text-center">
+            <p className="text-sage-500 text-sm animate-pulse">
+              Returning to reflection space...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showMorphingTransition) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
+        <div className="text-center space-y-8 max-w-md">
+          <h3 className="text-2xl font-light text-sage-800 animate-fade-in">
+            Your reflection is becoming a leaf...
+          </h3>
+          
+          {/* Morphing shape visualization */}
+          <div className="relative flex justify-center">
+            <div 
+              className={`w-24 h-24 ${getColorClass(responses.color)} opacity-80 animate-pulse transform transition-all duration-2000`}
+              style={{
+                clipPath: getShapeClipPath(responses.shape),
+                animation: 'morph 2s ease-in-out infinite alternate'
+              }}
+            />
+            
+            {/* Floating particles around the shape */}
+            <div className="absolute inset-0">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-2 h-2 bg-sage-300 rounded-full animate-bounce opacity-60"
+                  style={{
+                    left: `${20 + Math.random() * 60}%`,
+                    top: `${20 + Math.random() * 60}%`,
+                    animationDelay: `${i * 0.2}s`,
+                    animationDuration: '1.5s'
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          
+          <p className="text-sage-600 italic animate-fade-in">
+            "When you name how you feel, you feed the tree. When you feed it, it grows into clarity."
+          </p>
         </div>
       </div>
     );
@@ -133,7 +211,7 @@ export const DailyReflection = () => {
               <div
                 key={index}
                 className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                  index === currentStep ? 'bg-sage-600' : 
+                  index === currentStep ? 'bg-sage-600 scale-110' : 
                   index < currentStep ? 'bg-sage-400' : 'bg-sage-200'
                 }`}
               />
@@ -142,7 +220,7 @@ export const DailyReflection = () => {
           
           {currentStep < steps.length ? (
             <>
-              <h2 className="text-xl md:text-2xl font-light text-sage-800 mb-2">
+              <h2 className="text-xl md:text-2xl font-light text-sage-800 mb-2 animate-fade-in">
                 {currentStepData.title}
               </h2>
               <p className="text-sage-600 text-sm">
@@ -151,7 +229,7 @@ export const DailyReflection = () => {
             </>
           ) : (
             <>
-              <h2 className="text-xl md:text-2xl font-light text-sage-800 mb-2">
+              <h2 className="text-xl md:text-2xl font-light text-sage-800 mb-2 animate-fade-in">
                 How intense is this feeling?
               </h2>
               <p className="text-sage-600 text-sm">
@@ -167,10 +245,10 @@ export const DailyReflection = () => {
               <button
                 key={option.id}
                 onClick={() => handleSelection(option.id)}
-                className={`p-4 rounded-2xl transition-all duration-300 text-left ${
+                className={`p-4 rounded-2xl transition-all duration-500 text-left transform hover:scale-102 ${
                   responses[currentStepData.key] === option.id
-                    ? 'bg-sage-200 ring-2 ring-sage-400 transform scale-105'
-                    : 'bg-white/60 hover:bg-white/80 hover:scale-102'
+                    ? 'bg-sage-200 ring-2 ring-sage-400 scale-105 shadow-lg'
+                    : 'bg-white/70 hover:bg-white/90 shadow-sm hover:shadow-md'
                 }`}
               >
                 <div className="flex items-center space-x-3">
@@ -197,7 +275,7 @@ export const DailyReflection = () => {
                 max="10"
                 value={responses.intensity}
                 onChange={(e) => setResponses(prev => ({ ...prev, intensity: Number(e.target.value) }))}
-                className="w-full h-2 bg-sage-200 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-3 bg-sage-200 rounded-lg appearance-none cursor-pointer"
               />
               <div className="flex justify-between text-xs text-sage-500 mt-1">
                 <span>Gentle</span>
@@ -213,7 +291,7 @@ export const DailyReflection = () => {
                 value={responses.notes}
                 onChange={(e) => setResponses(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Today I noticed... I felt... This reminds me of..."
-                className="w-full h-24 p-4 bg-white/70 backdrop-blur border-0 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-sage-300 transition-all duration-300 text-sage-800 placeholder-sage-400"
+                className="w-full h-24 p-4 bg-white/80 backdrop-blur border-0 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-sage-300 transition-all duration-300 text-sage-800 placeholder-sage-400"
               />
             </div>
           </div>
@@ -223,9 +301,9 @@ export const DailyReflection = () => {
           <button
             onClick={currentStep < steps.length ? nextStep : generateLeaf}
             disabled={!canProceed}
-            className={`w-full py-3 rounded-2xl font-medium transition-all duration-300 ${
+            className={`w-full py-3 rounded-2xl font-medium transition-all duration-300 transform ${
               canProceed
-                ? 'bg-sage-600 hover:bg-sage-700 text-white transform hover:scale-105'
+                ? 'bg-sage-600 hover:bg-sage-700 text-white hover:scale-105 shadow-lg hover:shadow-xl'
                 : 'bg-sage-200 text-sage-400 cursor-not-allowed'
             }`}
           >
@@ -235,7 +313,7 @@ export const DailyReflection = () => {
           {currentStep > 0 && (
             <button
               onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-              className="w-full py-2 text-sage-500 hover:text-sage-600 transition-all duration-300 text-sm"
+              className="w-full py-2 text-sage-500 hover:text-sage-600 transition-all duration-300 text-sm hover:scale-105"
             >
               Go back
             </button>
