@@ -21,6 +21,16 @@ export const AnimatedTree = ({
   const [hoveredLeaf, setHoveredLeaf] = useState<string | null>(null);
   const [windAnimation, setWindAnimation] = useState(false);
   const [newLeafAnimating, setNewLeafAnimating] = useState<string | null>(null);
+  const [timeOfDay, setTimeOfDay] = useState<string>('day');
+
+  // Detect time of day for adaptive visuals
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 6 || hour > 20) setTimeOfDay('night');
+    else if (hour < 12) setTimeOfDay('morning');
+    else if (hour < 17) setTimeOfDay('afternoon');
+    else setTimeOfDay('evening');
+  }, []);
 
   useEffect(() => {
     // Trigger wind animation periodically
@@ -42,6 +52,31 @@ export const AnimatedTree = ({
       setTimeout(() => setNewLeafAnimating(null), 2000);
     }
   }, [isGrowing, growthState.leaves.length]);
+
+  const getAdaptiveBackground = () => {
+    if (silentMode) {
+      return 'bg-gradient-to-b from-slate-800 via-slate-700 to-slate-900';
+    }
+    
+    if (growthState.isQuietBloomMode) {
+      return 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800';
+    }
+
+    // Adapt to recent emotional patterns
+    const recentMoods = growthState.leaves
+      .slice(-5)
+      .map(leaf => leaf.reflection.mood);
+    
+    const hasHeavyMoods = recentMoods.some(mood => 
+      ['heavy', 'overwhelmed', 'anxious'].includes(mood)
+    );
+
+    if (hasHeavyMoods) {
+      return `bg-gradient-to-b from-${growthState.moodTone}-200 via-sage-100 to-${growthState.moodTone}-300`;
+    }
+
+    return `bg-gradient-to-b from-${growthState.moodTone}-100 via-beige-100 to-${growthState.moodTone}-200`;
+  };
 
   const getLeafStyle = (leaf: TreeLeaf, index: number) => {
     const isNew = newLeafAnimating === leaf.id;
@@ -132,19 +167,53 @@ export const AnimatedTree = ({
   return (
     <div 
       ref={treeRef}
-      className={`relative w-full h-96 overflow-hidden rounded-3xl transition-all duration-1000 ${
-        stormMode 
-          ? 'bg-gradient-to-b from-gray-600 via-gray-700 to-gray-800' 
-          : `bg-gradient-to-b from-${growthState.moodTone}-100 via-beige-100 to-${growthState.moodTone}-200`
-      }`}
+      className={`relative w-full h-96 overflow-hidden rounded-3xl transition-all duration-1000 ${getAdaptiveBackground()}`}
     >
+      {/* Time-based ambient effects */}
+      {timeOfDay === 'morning' && growthState.preferredReflectionTime === 'morning' && (
+        <div className="absolute top-6 right-8">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute text-lg animate-bounce"
+              style={{
+                left: `${i * 15}px`,
+                animationDelay: `${i * 0.5}s`,
+                animationDuration: '2s'
+              }}
+            >
+              🐦
+            </div>
+          ))}
+        </div>
+      )}
+
+      {timeOfDay === 'night' && growthState.preferredReflectionTime === 'night' && (
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-1 h-1 bg-yellow-200 rounded-full animate-pulse"
+              style={{
+                left: `${20 + Math.random() * 60}%`,
+                top: `${20 + Math.random() * 60}%`,
+                animationDelay: `${Math.random() * 3}s`,
+                animationDuration: '4s'
+              }}
+            >
+              ✨
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Ambient particles */}
       <div className="absolute inset-0 overflow-hidden">
         {[...Array(15)].map((_, i) => (
           <div
             key={i}
             className={`absolute w-1 h-1 rounded-full transition-colors duration-1000 ${
-              stormMode ? 'bg-gray-400 animate-pulse' : `bg-${growthState.moodTone}-300 animate-pulse`
+              growthState.isQuietBloomMode ? 'bg-gray-400 animate-pulse' : `bg-${growthState.moodTone}-300 animate-pulse`
             }`}
             style={{
               left: `${Math.random() * 100}%`,
@@ -156,13 +225,27 @@ export const AnimatedTree = ({
         ))}
       </div>
 
-      {/* Enhanced ground moss with mood color */}
+      {/* Enhanced ground with moss and mushrooms */}
       <div className="absolute bottom-0 left-0 right-0 h-20">
         <div className={`h-full rounded-t-full transition-all duration-1000 ${
-          stormMode 
+          growthState.isQuietBloomMode 
             ? 'bg-gradient-to-t from-gray-600 to-transparent' 
             : `bg-gradient-to-t from-${growthState.moodTone}-300 via-${growthState.moodTone}-200 to-transparent`
         }`} />
+        
+        {/* Mushrooms from quiet thoughts */}
+        {[...Array(growthState.mushroomCount)].map((_, i) => (
+          <div
+            key={`mushroom-${i}`}
+            className="absolute bottom-2 animate-fade-in"
+            style={{
+              left: `${25 + (i * 8) % 50}%`,
+              animationDelay: `${i * 0.5}s`
+            }}
+          >
+            <div className="text-sm opacity-70">🍄</div>
+          </div>
+        ))}
         
         {/* Whisper soil particles */}
         <div className="absolute bottom-0 left-0 right-0 h-4">
@@ -170,7 +253,7 @@ export const AnimatedTree = ({
             <div
               key={i}
               className={`absolute w-1 h-1 rounded-full ${
-                stormMode ? 'bg-gray-500' : `bg-${growthState.moodTone}-400`
+                growthState.isQuietBloomMode ? 'bg-gray-500' : `bg-${growthState.moodTone}-400`
               } opacity-60`}
               style={{
                 left: `${30 + Math.random() * 40}%`,
@@ -185,7 +268,7 @@ export const AnimatedTree = ({
       {/* Enhanced tree trunk with growth texture */}
       <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2">
         <div className={`w-10 h-36 rounded-t-full transition-all duration-1000 relative overflow-hidden ${
-          stormMode ? 'bg-gray-700' : 'bg-gradient-to-t from-amber-800 to-amber-700'
+          growthState.isQuietBloomMode ? 'bg-gray-700' : 'bg-gradient-to-t from-amber-800 to-amber-700'
         } ${windAnimation ? 'animate-pulse' : ''}`}>
           {/* Trunk texture lines */}
           <div className="absolute inset-0 opacity-30">
@@ -206,7 +289,7 @@ export const AnimatedTree = ({
           <div
             key={i}
             className={`absolute rounded-full transition-all duration-1000 ${
-              stormMode ? 'bg-gray-600' : 'bg-gradient-to-r from-amber-700 to-amber-600'
+              growthState.isQuietBloomMode ? 'bg-gray-600' : 'bg-gradient-to-r from-amber-700 to-amber-600'
             }`}
             style={{
               width: `${Math.max(32 - i * 2, 16)}px`,
@@ -240,7 +323,7 @@ export const AnimatedTree = ({
         >
           <div className={`w-full h-full ${getLeafColor(leaf.reflection.mood)} transition-all duration-300 ${
             hoveredLeaf === leaf.id ? 'opacity-100 shadow-lg' : 'opacity-85'
-          }`} />
+          } ${leaf.isGlowing ? 'animate-pulse' : ''}`} />
           
           {/* Special milestone glow */}
           {(index + 1) % 10 === 0 && (
@@ -287,27 +370,6 @@ export const AnimatedTree = ({
             <div className="w-4 h-8 bg-gradient-to-b from-yellow-200 to-yellow-300 rounded-full opacity-80 animate-pulse delay-700 transform group-hover:scale-110 transition-transform">
               <div className="absolute inset-0 bg-yellow-100 rounded-full opacity-50 animate-ping" />
             </div>
-          </div>
-        </>
-      )}
-
-      {/* Enhanced storm effects */}
-      {stormMode && (
-        <>
-          <div className="absolute inset-0 bg-gray-800 opacity-30" />
-          <div className="absolute top-0 left-0 w-full h-full">
-            {[...Array(25)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-px h-12 bg-blue-200 opacity-70 animate-pulse"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 80}%`,
-                  animationDelay: `${Math.random() * 2}s`,
-                  transform: `rotate(${15 + Math.random() * 30}deg)`
-                }}
-              />
-            ))}
           </div>
         </>
       )}

@@ -8,6 +8,8 @@ export interface Reflection {
   intensity: number;
   notes?: string;
   whisperText?: string;
+  timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
+  emotionalLore?: string;
 }
 
 export interface TreeLeaf {
@@ -17,6 +19,14 @@ export interface TreeLeaf {
   color: string;
   position: { x: number; y: number };
   growthDay: number;
+  isGlowing?: boolean;
+}
+
+export interface QuietThought {
+  id: string;
+  text: string;
+  date: string;
+  hasGrown: boolean;
 }
 
 export interface TreeGrowthState {
@@ -27,4 +37,16 @@ export interface TreeGrowthState {
   hasBird: boolean;
   hasLanterns: boolean;
   lastReflectionDate: string;
+  quietThoughts: QuietThought[];
+  emotionalPattern: string[];
+  preferredReflectionTime?: 'morning' | 'afternoon' | 'evening' | 'night';
+  isQuietBloomMode: boolean;
+  mushroomCount: number;
+}
+
+export interface EmotionalTrend {
+  dominantMood: string;
+  moodStreak: number;
+  lastSoftDay?: string;
+  needsGentleReminder: boolean;
 }
