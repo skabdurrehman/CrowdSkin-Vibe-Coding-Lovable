@@ -1,143 +1,134 @@
+
 import React, { useState } from 'react';
 import { useTreeGrowth } from '../hooks/useTreeGrowth';
 import { Reflection } from '../types/tree';
 import { AnimatedTree } from './AnimatedTree';
 
 export const DailyReflection = () => {
-  const { addReflection, growthState, isGrowing } = useTreeGrowth();
+  const { addReflection, growthState, isGrowing, leafMorphing } = useTreeGrowth();
   const [responses, setResponses] = useState({
     mood: '',
     shape: '',
     color: '',
+    direction: '',
     intensity: 5,
     notes: ''
   });
   const [currentStep, setCurrentStep] = useState(0);
-  const [showMorphingTransition, setShowMorphingTransition] = useState(false);
   const [showTreeView, setShowTreeView] = useState(false);
 
-  const moods = [
-    { id: 'peaceful', emoji: '😌', name: 'Peaceful' },
-    { id: 'anxious', emoji: '😰', name: 'Anxious' },
-    { id: 'heavy', emoji: '😔', name: 'Heavy' },
-    { id: 'disconnected', emoji: '😶', name: 'Disconnected' },
-    { id: 'overwhelmed', emoji: '😵', name: 'Overwhelmed' },
-    { id: 'hopeful', emoji: '🌱', name: 'Hopeful' },
-    { id: 'frustrated', emoji: '😤', name: 'Frustrated' },
-    { id: 'gentle', emoji: '🕊️', name: 'Gentle' }
+  const questions = [
+    {
+      key: 'mood',
+      title: 'If your body felt like an emotion today, what would it be?',
+      subtitle: 'Listen to what feels most true right now.',
+      options: [
+        { id: 'peaceful', emoji: '😌', name: 'Peaceful', description: 'Calm and settled' },
+        { id: 'anxious', emoji: '😰', name: 'Anxious', description: 'Restless and worried' },
+        { id: 'heavy', emoji: '😔', name: 'Heavy', description: 'Weighed down' },
+        { id: 'disconnected', emoji: '😶', name: 'Disconnected', description: 'Floating apart' },
+        { id: 'overwhelmed', emoji: '😵', name: 'Overwhelmed', description: 'Too much at once' },
+        { id: 'hopeful', emoji: '🌱', name: 'Hopeful', description: 'Growing toward light' },
+        { id: 'frustrated', emoji: '😤', name: 'Frustrated', description: 'Blocked energy' },
+        { id: 'gentle', emoji: '🕊️', name: 'Gentle', description: 'Soft and tender' }
+      ]
+    },
+    {
+      key: 'shape',
+      title: 'If your presence had a shape today, what would it be?',
+      subtitle: 'What form holds your energy?',
+      options: [
+        { id: 'circle', name: '○ Soft circle', description: 'Flowing and complete, no sharp edges' },
+        { id: 'triangle', name: '△ Sharp triangle', description: 'Pointed and tense, ready to defend' },
+        { id: 'oval', name: '◯ Gentle oval', description: 'Stretched but soft, like a breath' },
+        { id: 'diamond', name: '◊ Rigid diamond', description: 'Angular and precise, holding firm' },
+        { id: 'star', name: '✦ Radiating star', description: 'Reaching outward in all directions' }
+      ]
+    },
+    {
+      key: 'color',
+      title: 'If today had a color, what would it feel like?',
+      subtitle: 'What hue matches your inner landscape?',
+      options: [
+        { id: 'sage', name: 'Sage green', description: 'Calm and grounding, like deep forest' },
+        { id: 'blue', name: 'Ocean blue', description: 'Deep and quiet, like still water' },
+        { id: 'gray', name: 'Storm gray', description: 'Heavy and clouded, like morning mist' },
+        { id: 'yellow', name: 'Warm yellow', description: 'Bright but anxious, like morning sun' },
+        { id: 'red', name: 'Fire red', description: 'Intense and burning, like sunset flames' },
+        { id: 'purple', name: 'Soft purple', description: 'Mysterious and gentle, like twilight' },
+        { id: 'orange', name: 'Sunset orange', description: 'Energetic and restless, like autumn leaves' }
+      ]
+    },
+    {
+      key: 'direction',
+      title: 'If your presence had a direction, which way would it move?',
+      subtitle: 'How does your energy want to flow?',
+      options: [
+        { id: 'outward', name: '→ Reaching outward', description: 'Expanding toward others and the world' },
+        { id: 'inward', name: '← Curling inward', description: 'Drawing back into yourself' },
+        { id: 'still', name: '◦ Perfectly still', description: 'Centered and unmoving' },
+        { id: 'rising', name: '↑ Rising upward', description: 'Lifting toward something higher' }
+      ]
+    }
   ];
 
-  const shapes = [
-    { id: 'circle', name: '○ Soft circle', description: 'Flowing and complete' },
-    { id: 'triangle', name: '△ Sharp triangle', description: 'Pointed and tense' },
-    { id: 'oval', name: '◯ Gentle oval', description: 'Stretched but soft' },
-    { id: 'diamond', name: '◊ Rigid diamond', description: 'Angular and precise' },
-    { id: 'star', name: '✦ Radiating star', description: 'Reaching outward' }
-  ];
-
-  const colors = [
-    { id: 'sage', name: 'Sage green', description: 'Calm and grounding' },
-    { id: 'blue', name: 'Ocean blue', description: 'Deep and quiet' },
-    { id: 'gray', name: 'Storm gray', description: 'Heavy and clouded' },
-    { id: 'yellow', name: 'Warm yellow', description: 'Bright but anxious' },
-    { id: 'red', name: 'Fire red', description: 'Intense and burning' },
-    { id: 'purple', name: 'Soft purple', description: 'Mysterious and gentle' },
-    { id: 'orange', name: 'Sunset orange', description: 'Energetic and restless' }
-  ];
-
-  const steps = [
-    { key: 'mood', title: 'How does your inner landscape feel today?', options: moods },
-    { key: 'shape', title: 'What shape holds your energy right now?', options: shapes },
-    { key: 'color', title: 'What color tones are you carrying?', options: colors }
-  ];
-
-  const currentStepData = steps[currentStep];
+  const currentQuestion = questions[currentStep];
 
   const handleSelection = (value: string) => {
     setResponses(prev => ({
       ...prev,
-      [currentStepData.key]: value
+      [currentQuestion.key]: value
     }));
   };
 
   const nextStep = () => {
-    if (currentStep < steps.length - 1) {
+    if (currentStep < questions.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      setCurrentStep(steps.length);
+      setCurrentStep(questions.length);
     }
   };
 
   const generateLeaf = () => {
-    setShowMorphingTransition(true);
-    
-    // Create the reflection
     const newReflection: Reflection = {
       id: `reflection-${Date.now()}`,
       date: new Date().toISOString(),
       mood: responses.mood,
       shape: responses.shape,
       color: responses.color,
+      direction: responses.direction as 'outward' | 'inward' | 'still' | 'rising',
       intensity: responses.intensity,
       notes: responses.notes
     };
 
-    // Show morphing animation for 2 seconds, then add to tree
+    addReflection(newReflection);
+    setShowTreeView(true);
+    
+    // Auto-return after viewing growth
     setTimeout(() => {
-      addReflection(newReflection);
-      setShowMorphingTransition(false);
-      setShowTreeView(true);
-      
-      // Auto-return to reflection form after viewing tree
-      setTimeout(() => {
-        setShowTreeView(false);
-        // Reset form
-        setResponses({
-          mood: '',
-          shape: '',
-          color: '',
-          intensity: 5,
-          notes: ''
-        });
-        setCurrentStep(0);
-      }, 4000);
-    }, 2000);
-  };
-
-  const getShapeClipPath = (shape: string) => {
-    const shapes = {
-      triangle: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-      circle: 'circle(50%)',
-      oval: 'ellipse(65% 45%)',
-      diamond: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-      star: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)'
-    };
-    return shapes[shape as keyof typeof shapes] || 'ellipse(65% 45%)';
-  };
-
-  const getColorClass = (color: string) => {
-    const colors = {
-      sage: 'bg-sage-400',
-      blue: 'bg-blue-400',
-      gray: 'bg-gray-500',
-      yellow: 'bg-yellow-400',
-      red: 'bg-red-400',
-      purple: 'bg-purple-400',
-      orange: 'bg-orange-400'
-    };
-    return colors[color as keyof typeof colors] || 'bg-sage-400';
+      setShowTreeView(false);
+      setResponses({
+        mood: '',
+        shape: '',
+        color: '',
+        direction: '',
+        intensity: 5,
+        notes: ''
+      });
+      setCurrentStep(0);
+    }, 6000);
   };
 
   if (showTreeView) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <div className="max-w-2xl w-full space-y-6">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl md:text-3xl font-light text-sage-800 mb-4 animate-fade-in">
-              Your reflection has grown
+          <div className="text-center mb-8 animate-fade-in">
+            <h2 className="text-2xl md:text-3xl font-light text-sage-800 mb-4">
+              Your reflection becomes life
             </h2>
-            <p className="text-sage-600 animate-fade-in">
-              Watch as your new leaf finds its place in your tree.
+            <p className="text-sage-600">
+              Watch your new leaf find its natural place in your growing canopy.
             </p>
           </div>
           
@@ -145,129 +136,112 @@ export const DailyReflection = () => {
             growthState={growthState}
             onLeafClick={() => {}}
             isGrowing={isGrowing}
+            leafMorphing={leafMorphing}
           />
           
-          <div className="text-center">
-            <p className="text-sage-500 text-sm animate-pulse">
-              Returning to reflection space...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (showMorphingTransition) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <div className="text-center space-y-8 max-w-md">
-          <h3 className="text-2xl font-light text-sage-800 animate-fade-in">
-            Your reflection is becoming a leaf...
-          </h3>
-          
-          {/* Morphing shape visualization */}
-          <div className="relative flex justify-center">
-            <div 
-              className={`w-24 h-24 ${getColorClass(responses.color)} opacity-80 animate-pulse transform transition-all duration-2000`}
-              style={{
-                clipPath: getShapeClipPath(responses.shape),
-                animation: 'morph 2s ease-in-out infinite alternate'
-              }}
-            />
-            
-            {/* Floating particles around the shape */}
-            <div className="absolute inset-0">
-              {[...Array(8)].map((_, i) => (
-                <div
-                  key={i}
-                  className="absolute w-2 h-2 bg-sage-300 rounded-full animate-bounce opacity-60"
-                  style={{
-                    left: `${20 + Math.random() * 60}%`,
-                    top: `${20 + Math.random() * 60}%`,
-                    animationDelay: `${i * 0.2}s`,
-                    animationDuration: '1.5s'
-                  }}
-                />
-              ))}
+          {leafMorphing && (
+            <div className="text-center animate-pulse">
+              <p className="text-sage-500 text-sm">
+                Your {responses.color} {responses.shape} is becoming a leaf...
+              </p>
             </div>
-          </div>
+          )}
           
-          <p className="text-sage-600 italic animate-fade-in">
-            "When you name how you feel, you feed the tree. When you feed it, it grows into clarity."
-          </p>
+          {isGrowing && !leafMorphing && (
+            <div className="text-center animate-pulse">
+              <p className="text-sage-500 text-sm">
+                Finding its perfect place in the canopy...
+              </p>
+            </div>
+          )}
+          
+          {!isGrowing && !leafMorphing && (
+            <div className="text-center">
+              <p className="text-sage-500 text-sm animate-fade-in">
+                Your tree grows stronger. Returning to reflection space...
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  const canProceed = responses[currentStepData?.key] || currentStep >= steps.length;
+  const canProceed = responses[currentQuestion?.key] || currentStep >= questions.length;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6">
-      <div className="max-w-md w-full space-y-6">
+    <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-br from-sage-50 via-beige-50 to-lavender-50">
+      <div className="max-w-lg w-full space-y-8">
+        {/* Progress indicator */}
         <div className="text-center mb-8">
-          <div className="flex justify-center space-x-2 mb-4">
-            {[...Array(4)].map((_, index) => (
+          <div className="flex justify-center space-x-3 mb-6">
+            {[...Array(5)].map((_, index) => (
               <div
                 key={index}
-                className={`w-3 h-3 rounded-full transition-all duration-500 ${
-                  index === currentStep ? 'bg-sage-600 scale-110' : 
-                  index < currentStep ? 'bg-sage-400' : 'bg-sage-200'
+                className={`transition-all duration-700 ${
+                  index === currentStep ? 'w-8 h-3 bg-sage-600 rounded-full scale-110' : 
+                  index < currentStep ? 'w-3 h-3 bg-sage-400 rounded-full' : 
+                  'w-3 h-3 bg-sage-200 rounded-full'
                 }`}
               />
             ))}
           </div>
           
-          {currentStep < steps.length ? (
-            <>
-              <h2 className="text-xl md:text-2xl font-light text-sage-800 mb-2 animate-fade-in">
-                {currentStepData.title}
+          {currentStep < questions.length ? (
+            <div className="animate-fade-in">
+              <h2 className="text-xl md:text-2xl font-light text-sage-800 mb-3 leading-relaxed">
+                {currentQuestion.title}
               </h2>
-              <p className="text-sage-600 text-sm">
-                Choose what feels truest right now.
+              <p className="text-sage-600 text-sm italic">
+                {currentQuestion.subtitle}
               </p>
-            </>
+            </div>
           ) : (
-            <>
-              <h2 className="text-xl md:text-2xl font-light text-sage-800 mb-2 animate-fade-in">
-                How intense is this feeling?
+            <div className="animate-fade-in">
+              <h2 className="text-xl md:text-2xl font-light text-sage-800 mb-3">
+                How intense does this feeling?
               </h2>
-              <p className="text-sage-600 text-sm">
-                Fine-tune your reflection.
+              <p className="text-sage-600 text-sm italic">
+                Fine-tune the depth of your reflection.
               </p>
-            </>
+            </div>
           )}
         </div>
 
-        {currentStep < steps.length ? (
-          <div className="grid grid-cols-1 gap-3">
-            {currentStepData.options.map((option) => (
+        {/* Question content */}
+        {currentStep < questions.length ? (
+          <div className="grid grid-cols-1 gap-4">
+            {currentQuestion.options.map((option, index) => (
               <button
                 key={option.id}
                 onClick={() => handleSelection(option.id)}
-                className={`p-4 rounded-2xl transition-all duration-500 text-left transform hover:scale-102 ${
-                  responses[currentStepData.key] === option.id
-                    ? 'bg-sage-200 ring-2 ring-sage-400 scale-105 shadow-lg'
-                    : 'bg-white/70 hover:bg-white/90 shadow-sm hover:shadow-md'
+                className={`p-5 rounded-3xl transition-all duration-500 text-left transform hover:scale-102 ${
+                  responses[currentQuestion.key] === option.id
+                    ? 'bg-sage-200 ring-2 ring-sage-400 scale-105 shadow-xl'
+                    : 'bg-white/80 hover:bg-white/95 shadow-md hover:shadow-lg backdrop-blur-sm'
                 }`}
+                style={{
+                  animationDelay: `${index * 0.1}s`
+                }}
               >
-                <div className="flex items-center space-x-3">
-                  {option.emoji && <span className="text-2xl">{option.emoji}</span>}
-                  <div>
-                    <div className="font-medium text-sage-800">{option.name}</div>
-                    {option.description && (
-                      <div className="text-sm text-sage-600">{option.description}</div>
-                    )}
+                <div className="flex items-start space-x-4">
+                  {option.emoji && (
+                    <span className="text-3xl flex-shrink-0 mt-1">{option.emoji}</span>
+                  )}
+                  <div className="flex-1">
+                    <div className="font-medium text-sage-800 text-lg mb-1">{option.name}</div>
+                    <div className="text-sm text-sage-600 leading-relaxed">{option.description}</div>
                   </div>
                 </div>
               </button>
             ))}
           </div>
         ) : (
-          <div className="space-y-6">
-            <div>
-              <p className="text-sage-700 font-medium mb-3">
-                Intensity ({responses.intensity}/10)
+          <div className="space-y-6 animate-fade-in">
+            {/* Intensity slider */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-md">
+              <p className="text-sage-700 font-medium mb-4">
+                Intensity: {responses.intensity}/10
               </p>
               <input
                 type="range"
@@ -275,50 +249,61 @@ export const DailyReflection = () => {
                 max="10"
                 value={responses.intensity}
                 onChange={(e) => setResponses(prev => ({ ...prev, intensity: Number(e.target.value) }))}
-                className="w-full h-3 bg-sage-200 rounded-lg appearance-none cursor-pointer"
+                className="w-full h-4 bg-sage-200 rounded-full appearance-none cursor-pointer"
               />
-              <div className="flex justify-between text-xs text-sage-500 mt-1">
-                <span>Gentle</span>
-                <span>Intense</span>
+              <div className="flex justify-between text-xs text-sage-500 mt-2">
+                <span>Gentle whisper</span>
+                <span>Overwhelming presence</span>
               </div>
             </div>
 
-            <div>
+            {/* Optional notes */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-md">
               <p className="text-sage-700 font-medium mb-3">
-                Any words to add? (optional)
+                Any words that want to be remembered? (optional)
               </p>
               <textarea
                 value={responses.notes}
                 onChange={(e) => setResponses(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Today I noticed... I felt... This reminds me of..."
-                className="w-full h-24 p-4 bg-white/80 backdrop-blur border-0 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-sage-300 transition-all duration-300 text-sage-800 placeholder-sage-400"
+                className="w-full h-28 p-4 bg-sage-50 border-0 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-sage-300 transition-all duration-300 text-sage-800 placeholder-sage-400"
               />
             </div>
           </div>
         )}
 
-        <div className="space-y-3">
+        {/* Navigation */}
+        <div className="space-y-4">
           <button
-            onClick={currentStep < steps.length ? nextStep : generateLeaf}
+            onClick={currentStep < questions.length ? nextStep : generateLeaf}
             disabled={!canProceed}
-            className={`w-full py-3 rounded-2xl font-medium transition-all duration-300 transform ${
+            className={`w-full py-4 rounded-3xl font-medium transition-all duration-500 transform ${
               canProceed
                 ? 'bg-sage-600 hover:bg-sage-700 text-white hover:scale-105 shadow-lg hover:shadow-xl'
                 : 'bg-sage-200 text-sage-400 cursor-not-allowed'
             }`}
           >
-            {currentStep < steps.length ? 'Continue' : 'Grow this leaf'}
+            {currentStep < questions.length ? 'Continue' : 'Grow this into a leaf'}
           </button>
 
           {currentStep > 0 && (
             <button
               onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-              className="w-full py-2 text-sage-500 hover:text-sage-600 transition-all duration-300 text-sm hover:scale-105"
+              className="w-full py-3 text-sage-500 hover:text-sage-600 transition-all duration-300 text-sm hover:scale-105"
             >
               Go back
             </button>
           )}
         </div>
+
+        {/* Gentle encouragement */}
+        {currentStep === 0 && (
+          <div className="text-center mt-8 animate-fade-in">
+            <p className="text-sage-500 text-sm italic">
+              "Even the sun doesn't show up every day, but when it does, it grows something beautiful."
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

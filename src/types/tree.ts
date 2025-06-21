@@ -10,6 +10,7 @@ export interface Reflection {
   whisperText?: string;
   timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'night';
   emotionalLore?: string;
+  direction?: 'outward' | 'inward' | 'still' | 'rising';
 }
 
 export interface TreeLeaf {
@@ -17,9 +18,10 @@ export interface TreeLeaf {
   reflection: Reflection;
   shape: string;
   color: string;
-  position: { x: number; y: number };
+  position: { x: number; y: number; depth?: number };
   growthDay: number;
   isGlowing?: boolean;
+  depth?: number;
 }
 
 export interface QuietThought {
@@ -42,6 +44,9 @@ export interface TreeGrowthState {
   preferredReflectionTime?: 'morning' | 'afternoon' | 'evening' | 'night';
   isQuietBloomMode: boolean;
   mushroomCount: number;
+  branchCount?: number;
+  canopyRadius?: number;
+  twilightMode?: boolean;
 }
 
 export interface EmotionalTrend {
@@ -49,4 +54,12 @@ export interface EmotionalTrend {
   moodStreak: number;
   lastSoftDay?: string;
   needsGentleReminder: boolean;
+}
+
+export interface SeasonalEffects {
+  hasWind: boolean;
+  hasBirds: boolean;
+  hasBlossoms: boolean;
+  hasTwilightGlow: boolean;
+  currentSeason: 'seedling' | 'growing' | 'blooming' | 'mature';
 }

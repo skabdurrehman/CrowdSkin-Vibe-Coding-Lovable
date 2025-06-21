@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { TreeGrowthState, Reflection, TreeLeaf, QuietThought, EmotionalTrend } from '../types/tree';
 
@@ -16,12 +15,14 @@ export const useTreeGrowth = () => {
       quietThoughts: [],
       emotionalPattern: [],
       isQuietBloomMode: false,
-      mushroomCount: 0
+      mushroomCount: 0,
+      branchCount: 1,
+      canopyRadius: 25,
+      twilightMode: false
     };
     
     if (saved) {
       const parsedState = JSON.parse(saved);
-      // Ensure emotionalPattern is always an array
       return {
         ...defaultState,
         ...parsedState,
@@ -35,6 +36,7 @@ export const useTreeGrowth = () => {
   const [isGrowing, setIsGrowing] = useState(false);
   const [silentMode, setSilentMode] = useState(false);
   const [currentTrend, setCurrentTrend] = useState<EmotionalTrend | null>(null);
+  const [leafMorphing, setLeafMorphing] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('crowdskin-tree-growth', JSON.stringify(growthState));
@@ -86,59 +88,102 @@ export const useTreeGrowth = () => {
     return timeOfDay;
   };
 
+  const generateIntelligentLeafPosition = (leafCount: number, mood: string) => {
+    // Smart canopy logic for natural tree growth
+    const totalLeaves = leafCount + 1;
+    const branchCount = Math.floor(totalLeaves / 30) + 2; // New branch every 30 leaves
+    
+    // Expand canopy width as tree grows
+    const baseRadius = 25;
+    const expansionFactor = Math.min(totalLeaves / 50, 2); // Max 2x expansion
+    const canopyRadius = baseRadius + (expansionFactor * 15);
+    
+    // Mood-based clustering
+    const moodClusters = {
+      peaceful: { angle: 0, radius: 0.7 },
+      hopeful: { angle: 45, radius: 0.8 },
+      gentle: { angle: 90, radius: 0.6 },
+      anxious: { angle: 180, radius: 0.9 },
+      frustrated: { angle: 225, radius: 0.85 },
+      heavy: { angle: 270, radius: 0.75 },
+      overwhelmed: { angle: 315, radius: 0.95 },
+      disconnected: { angle: 135, radius: 0.8 }
+    };
+    
+    const cluster = moodClusters[mood as keyof typeof moodClusters] || { angle: Math.random() * 360, radius: 0.8 };
+    
+    // Calculate position within natural canopy bounds
+    const branchIndex = leafCount % branchCount;
+    const leafOnBranch = Math.floor(leafCount / branchCount);
+    
+    // Add some randomness to prevent rigid patterns
+    const angleVariation = (Math.random() - 0.5) * 60; // ±30 degrees
+    const radiusVariation = (Math.random() - 0.5) * 0.3; // ±15% radius
+    
+    const finalAngle = (cluster.angle + angleVariation + (branchIndex * (360 / branchCount))) % 360;
+    const finalRadius = canopyRadius * (cluster.radius + radiusVariation) * (0.4 + (leafOnBranch * 0.1));
+    
+    // Convert to cartesian coordinates, ensuring leaves stay in canopy
+    const x = 50 + Math.cos(finalAngle * Math.PI / 180) * finalRadius;
+    const y = Math.max(15, Math.min(60, 35 - Math.sin(finalAngle * Math.PI / 180) * finalRadius * 0.6));
+    
+    return {
+      x: Math.max(15, Math.min(85, x)),
+      y: Math.max(15, Math.min(65, y)),
+      depth: Math.random() * 10 // For layering effect
+    };
+  };
+
   const addReflection = (reflection: Reflection) => {
     setIsGrowing(true);
+    setLeafMorphing(true);
     
     const timeOfDay = detectPreferredTime(reflection);
     const enhancedReflection = { ...reflection, timeOfDay };
+    
+    const position = generateIntelligentLeafPosition(growthState.totalReflections, reflection.mood);
     
     const newLeaf: TreeLeaf = {
       id: `leaf-${Date.now()}`,
       reflection: enhancedReflection,
       shape: reflection.shape,
       color: reflection.color,
-      position: generateLeafPosition(growthState.totalReflections),
+      position,
       growthDay: growthState.totalReflections + 1,
-      isGlowing: reflection.intensity >= 8 // High intensity reflections glow
+      isGlowing: reflection.intensity >= 8,
+      depth: position.depth
     };
 
-    // Animate the growth process with gentle music
+    // Smooth morph transition
     setTimeout(() => {
-      setGrowthState(prev => {
-        const newTotal = prev.totalReflections + 1;
-        const newPattern = [...prev.emotionalPattern, reflection.mood].slice(-10);
-        
-        // Update preferred reflection time
-        const timePreferences = prev.leaves
-          .map(l => l.reflection.timeOfDay)
-          .filter(Boolean);
-        timePreferences.push(timeOfDay);
-        
-        const timeCounts: { [key: string]: number } = {};
-        timePreferences.forEach(time => {
-          if (time) timeCounts[time] = (timeCounts[time] || 0) + 1;
+      setLeafMorphing(false);
+      
+      setTimeout(() => {
+        setGrowthState(prev => {
+          const newTotal = prev.totalReflections + 1;
+          const newPattern = [...prev.emotionalPattern, reflection.mood].slice(-10);
+          const newBranchCount = Math.floor(newTotal / 30) + 2;
+          const newCanopyRadius = 25 + Math.min(newTotal / 50, 2) * 15;
+          
+          return {
+            ...prev,
+            totalReflections: newTotal,
+            leaves: [...prev.leaves, newLeaf].sort((a, b) => (b.depth || 0) - (a.depth || 0)), // Sort by depth for layering
+            moodTone: getMoodTone(reflection.mood),
+            hasFlowers: newTotal >= 50,
+            hasBird: newTotal >= 50,
+            hasLanterns: newTotal >= 100,
+            branchCount: newBranchCount,
+            canopyRadius: newCanopyRadius,
+            twilightMode: newTotal >= 150,
+            lastReflectionDate: reflection.date,
+            emotionalPattern: newPattern
+          };
         });
         
-        const preferredTime = Object.keys(timeCounts).reduce((a, b) => 
-          timeCounts[a] > timeCounts[b] ? a : b
-        ) as 'morning' | 'afternoon' | 'evening' | 'night';
-
-        return {
-          ...prev,
-          totalReflections: newTotal,
-          leaves: [...prev.leaves, newLeaf],
-          moodTone: getMoodTone(reflection.mood),
-          hasFlowers: newTotal >= 30,
-          hasBird: newTotal >= 50,
-          hasLanterns: newTotal >= 100,
-          lastReflectionDate: reflection.date,
-          emotionalPattern: newPattern,
-          preferredReflectionTime: preferredTime
-        };
-      });
-      
-      playGrowthSound(reflection.mood, timeOfDay);
-      setIsGrowing(false);
+        playGrowthSound(reflection.mood, timeOfDay);
+        setIsGrowing(false);
+      }, 1000);
     }, 1500);
   };
 
@@ -169,18 +214,17 @@ export const useTreeGrowth = () => {
     playRootSound();
   };
 
-  const generateLeafPosition = (leafCount: number) => {
-    const branchCount = Math.floor(leafCount / 8) + 1;
-    const leafOnBranch = leafCount % 8;
-    const branchAngle = (360 / Math.max(branchCount, 3)) * (leafCount % branchCount);
-    
-    const radius = 25 + (leafOnBranch * 6);
-    const x = 50 + Math.cos(branchAngle * Math.PI / 180) * radius;
-    const y = 35 + Math.sin(branchAngle * Math.PI / 180) * radius * 0.8;
+  const getSeasonalEffects = () => {
+    const { totalReflections } = growthState;
     
     return {
-      x: Math.max(10, Math.min(90, x)),
-      y: Math.max(15, Math.min(75, y))
+      hasWind: totalReflections >= 50,
+      hasBirds: totalReflections >= 50,
+      hasBlossoms: totalReflections >= 100,
+      hasTwilightGlow: totalReflections >= 150,
+      currentSeason: totalReflections < 30 ? 'seedling' : 
+                   totalReflections < 100 ? 'growing' :
+                   totalReflections < 150 ? 'blooming' : 'mature'
     };
   };
 
@@ -292,9 +336,11 @@ export const useTreeGrowth = () => {
     addWhisper,
     addQuietThought,
     isGrowing,
+    leafMorphing,
     silentMode,
     toggleSilentMode,
     toggleQuietBloom,
-    currentTrend
+    currentTrend,
+    getSeasonalEffects
   };
 };
