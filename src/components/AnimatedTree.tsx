@@ -23,6 +23,8 @@ export const AnimatedTree = ({
   const [windAnimation, setWindAnimation] = useState(false);
   const [selectedLeaf, setSelectedLeaf] = useState<string | null>(null);
   const [treeScale, setTreeScale] = useState(1);
+  const [timeOfDay, setTimeOfDay] = useState<'morning' | 'afternoon' | 'evening' | 'night'>('morning');
+  const [newLeafAnimating, setNewLeafAnimating] = useState<string | null>(null);
 
   // Detect time of day for adaptive visuals
   useEffect(() => {
