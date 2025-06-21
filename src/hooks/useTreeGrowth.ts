@@ -5,7 +5,7 @@ import { TreeGrowthState, Reflection, TreeLeaf, QuietThought, EmotionalTrend } f
 export const useTreeGrowth = () => {
   const [growthState, setGrowthState] = useState<TreeGrowthState>(() => {
     const saved = localStorage.getItem('crowdskin-tree-growth');
-    return saved ? JSON.parse(saved) : {
+    const defaultState = {
       totalReflections: 0,
       leaves: [],
       moodTone: 'sage',
@@ -18,6 +18,18 @@ export const useTreeGrowth = () => {
       isQuietBloomMode: false,
       mushroomCount: 0
     };
+    
+    if (saved) {
+      const parsedState = JSON.parse(saved);
+      // Ensure emotionalPattern is always an array
+      return {
+        ...defaultState,
+        ...parsedState,
+        emotionalPattern: Array.isArray(parsedState.emotionalPattern) ? parsedState.emotionalPattern : []
+      };
+    }
+    
+    return defaultState;
   });
 
   const [isGrowing, setIsGrowing] = useState(false);
