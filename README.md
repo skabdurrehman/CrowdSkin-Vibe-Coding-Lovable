@@ -3,8 +3,6 @@
 
 *A self-perception reflection app that gently grows a tree from your emotions*
 
-![CrowdSkin Banner](https://via.placeholder.com/800x300/8FBC8F/FFFFFF?text=CrowdSkin+%F0%9F%8C%B3)
-
 ## 🌱 What is CrowdSkin?
 
 CrowdSkin is an innovative emotional wellness application that transforms your daily feelings into a living, breathing digital tree. Unlike abstract visualizations or random clustering, CrowdSkin creates a botanically truthful and psychologically grounded representation of your emotional journey.
