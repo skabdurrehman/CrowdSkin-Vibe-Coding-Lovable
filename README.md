@@ -2,6 +2,7 @@
 # 🌳 CrowdSkin - Your Inner Forest Companion
 
 *A self-perception reflection app that gently grows a tree from your emotions*
+**URL**: https://lovable.dev/projects/fe98614f-5a3a-431a-a162-2aa34aac72e6
 
 ## 🌱 What is CrowdSkin?
 
